@@ -52,13 +52,9 @@
     <script>
         // Initialize the CheerpJ environment first
         cheerpjInit().then(function() {
-            // Clear the loading message once initialized
+           
             document.getElementById('app-container').innerHTML = '';
             
-            /* 3. Run your Java application.
-               - Replace "YourJarFileName.jar" with the exact name of your uploaded JAR file.
-               - Replace "MainClassName" with the name of your main class file (the one with the main method).
-            */
             cheerpjCreateDisplay(-1, -1, document.getElementById('app-container'));
             cheerpjRunJar("/app/RiemannSums.jar");
         });
