@@ -1,285 +1,620 @@
 <!DOCTYPE html>
+
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
+
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Universal Riemann Sum Visualization</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.8.0/math.js"></script>
+
+    <title>Riemann Sum Visualization: y = x²</title>
+
     <style>
+
         body {
+
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+
             background-color: #f5f5f7;
+
             margin: 0;
+
             padding: 20px;
+
             display: flex;
+
             flex-direction: column;
+
             align-items: center;
+
         }
+
         .container {
+
             background-color: white;
+
             border-radius: 12px;
+
             box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+
             padding: 24px;
+
             max-width: 900px;
+
             width: 100%;
+
         }
+
         h1 {
+
             font-size: 24px;
+
             color: #1d1d1f;
+
             margin-top: 0;
+
             text-align: center;
+
         }
+
         .controls {
+
             display: grid;
+
             grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+
             gap: 16px;
+
             margin-bottom: 20px;
+
             background: #fbfbfd;
+
             padding: 16px;
+
             border-radius: 8px;
+
         }
+
         .control-group {
+
             display: flex;
+
             flex-direction: column;
+
         }
-        .control-group.full-width {
-            grid-column: 1 / -1;
-        }
+
         label {
+
             font-size: 12px;
+
             font-weight: 600;
+
             color: #86868b;
+
             margin-bottom: 4px;
+
             text-transform: uppercase;
+
         }
+
         input, select {
+
             padding: 8px 12px;
+
             border: 1px solid #d2d2d7;
+
             border-radius: 6px;
+
             font-size: 14px;
-            outline: none;
+
         }
-        input:focus, select:focus {
-            border-color: #0071e3;
-        }
+
         button {
+
             grid-column: 1 / -1;
+
             background-color: #0071e3;
+
             color: white;
+
             border: none;
+
             padding: 12px;
+
             font-size: 16px;
+
             font-weight: 500;
+
             border-radius: 6px;
+
             cursor: pointer;
+
             transition: background 0.2s;
+
         }
+
         button:hover {
+
             background-color: #0077ed;
+
         }
-        #error-msg {
-            grid-column: 1 / -1;
-            color: #e74c3c;
-            font-weight: 600;
-            font-size: 13px;
-            text-align: center;
-            margin-top: -8px;
-        }
+
         canvas {
+
             border: 1px solid #d2d2d7;
+
             border-radius: 8px;
+
             background-color: white;
+
             display: block;
+
             margin: 0 auto;
+
         }
+
     </style>
+
 </head>
+
 <body>
 
+
+
 <div class="container">
-    <h1 id="main-title">Riemann Sum Visualization</h1>
+
+    <h1>Riemann Sum Calculator & Integrator (y = x²)</h1>
+
     
+
     <div class="controls">
-        <div class="control-group full-width">
-            <label for="functionInput">Function f(x)</label>
-            <input type="text" id="functionInput" value="sin(x)" placeholder="e.g., sin(x), log(x), x^2">
-        </div>
+
         <div class="control-group">
+
             <label for="method">Method</label>
+
             <select id="method">
+
                 <option value="1">LRAM (Left-hand)</option>
+
                 <option value="2">RRAM (Right-hand)</option>
+
                 <option value="3">MRAM (Midpoint)</option>
+
                 <option value="4">Trapezoidal Rule</option>
+
             </select>
+
         </div>
+
         <div class="control-group">
+
             <label for="boundA">Lower Bound (a)</label>
+
             <input type="number" id="boundA" value="0" step="any">
+
         </div>
+
         <div class="control-group">
+
             <label for="boundB">Upper Bound (b)</label>
-            <input type="number" id="boundB" value="6.28" step="any">
+
+            <input type="number" id="boundB" value="3" step="any">
+
         </div>
+
         <div class="control-group">
+
             <label for="intervals">Subintervals (n)</label>
-            <input type="number" id="intervals" value="12" min="1">
+
+            <input type="number" id="intervals" value="6" min="1">
+
         </div>
-        <div id="error-msg"></div>
-        <button id="calcBtn" onclick="updateGraph()">Calculate & Visualize</button>
+
+        <button onclick="updateGraph()">Calculate & Visualize</button>
+
     </div>
 
+
+
     <canvas id="graphCanvas" width="850" height="600"></canvas>
+
 </div>
 
+
+
 <script>
-    let compiledExpression = null;
 
     function evaluateFunction(x) {
-        if (!compiledExpression) return 0;
-        try {
-            let value = compiledExpression.evaluate({ x: x });
-            if (typeof value === 'number' && isFinite(value)) {
-                return value;
-            }
-            return 0; 
-        } catch (e) {
-            return 0;
-        }
+
+        return x * x;
+
     }
+
+
 
     function calculateExactIntegral(a, b) {
-        const simpsonN = 2000; 
-        const h = (b - a) / simpsonN;
-        let sum = evaluateFunction(a) + evaluateFunction(b);
 
-        for (let i = 1; i < simpsonN; i++) {
-            let x = a + i * h;
-            sum += (i % 2 === 0 ? 2 : 4) * evaluateFunction(x);
-        }
-        return (h / 3) * sum;
+        return (Math.pow(b, 3) / 3.0) - (Math.pow(a, 3) / 3.0);
+
     }
+
+
 
     function calculateRiemannSum(method, a, b, n) {
+
         const dx = (b - a) / n;
+
         let sum = 0.0;
 
+
+
         for (let i = 0; i < n; i++) {
+
             let leftX = a + i * dx;
+
             let rightX = leftX + dx;
+
             let targetX = leftX;
 
+
+
             if (method === 2) targetX = rightX;
+
             else if (method === 3) targetX = leftX + dx / 2.0;
 
+
+
             if (method === 4) {
+
                 sum += (evaluateFunction(leftX) + evaluateFunction(rightX)) / 2.0;
+
             } else {
+
                 sum += evaluateFunction(targetX);
+
             }
+
         }
-        return sum * dx;
+
+        return method === 4 ? sum * dx : sum * dx;
+
     }
 
-    function updateGraph() {
-        const canvas = document.getElementById('graphCanvas');
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-        const errorDiv = document.getElementById('error-msg');
-        const functionString = document.getElementById('functionInput').value;
-        
-        errorDiv.innerText = ''; 
 
-        try {
-            compiledExpression = math.compile(functionString);
-            compiledExpression.evaluate({ x: 1 }); 
-        } catch (err) {
-            errorDiv.innerText = "Syntax Error in Function: " + err.message;
-            return;
-        }
+
+    function updateGraph() {
+
+        const canvas = document.getElementById('graphCanvas');
+
+        const ctx = canvas.getContext('2d');
+
+        
+
+        // Inputs
 
         const method = parseInt(document.getElementById('method').value);
+
         const a = parseFloat(document.getElementById('boundA').value);
+
         const b = parseFloat(document.getElementById('boundB').value);
+
         const n = parseInt(document.getElementById('intervals').value);
 
-        if (isNaN(a) || isNaN(b) || isNaN(n) || n <= 0) {
-            errorDiv.innerText = "Please enter valid numeric values.";
-            return;
-        }
 
-        document.getElementById('main-title').innerText = `Riemann Sum Visualization: f(x) = ${functionString}`;
+
+        // Math Calculations
 
         const approxArea = calculateRiemannSum(method, a, b, n);
+
         const exactArea = calculateExactIntegral(a, b);
+
         const absoluteError = Math.abs(exactArea - approxArea);
 
+
+
+        // Layout variables
+
         const padding = 60;
+
         const width = canvas.width;
+
         const height = canvas.height;
 
-        let minX = Math.min(0, a) - 1;
-        let maxX = Math.max(0, b) + 1;
-        
-        let sampleMinY = 0;
-        let sampleMaxY = 1;
-        let step = (maxX - minX) / 100;
-        for (let s = minX; s <= maxX; s += step) {
-            let yVal = evaluateFunction(s);
-            if (isFinite(yVal)) {
-                if (yVal < sampleMinY) sampleMinY = yVal;
-                if (yVal > sampleMaxY) sampleMaxY = yVal;
-            }
-        }
-        
-        let minY = sampleMinY - Math.abs(sampleMinY * 0.2) - 1;
-        let maxY = sampleMaxY + Math.abs(sampleMaxY * 0.2) + 1;
+
+
+        const minX = Math.min(0, a) - 1;
+
+        const maxX = Math.max(0, b) + 1;
+
+        const minY = -1;
+
+        const maxY = Math.max(a * a, b * b) + 2;
+
+
+
+        // Coordinate conversion helper functions
 
         function toPixelX(mathX) {
+
             return padding + ((mathX - minX) / (maxX - minX)) * (width - 2 * padding);
+
         }
+
         function toPixelY(mathY) {
+
             return height - padding - ((mathY - minY) / (maxY - minY)) * (height - 2 * padding);
+
         }
+
         function toMathX(pixelX) {
+
             return minX + ((pixelX - padding) / (width - 2 * padding)) * (maxX - minX);
+
         }
+
+
+
+        // Clear canvas
 
         ctx.clearRect(0, 0, width, height);
 
+
+
         const originY = toPixelY(0);
+
         const originX = toPixelX(0);
 
-        ctx.lineWidth = 1;
-        ctx.font = "12px sans-serif";
-        
-        let xRange = maxX - minX;
-        let gridStepX = xRange > 20 ? Math.ceil(xRange / 15) : 1;
-        
-        let yRange = maxY - minY;
-        let gridStepY = yRange > 20 ? Math.ceil(yRange / 15) : 1;
 
-        for (let x = Math.floor(minX); x <= Math.ceil(maxX); x += gridStepX) {
+
+        // 1. Draw Background Grid Lines & Ticks
+
+        ctx.lineWidth = 1;
+
+        ctx.font = "12px sans-serif";
+
+        
+
+        // X Grid
+
+        for (let x = Math.ceil(minX); x <= Math.floor(maxX); x++) {
+
             let pX = toPixelX(x);
+
             if (pX >= padding && pX <= width - padding) {
+
                 ctx.strokeStyle = "#e6e6e6";
+
                 ctx.beginPath(); ctx.moveTo(pX, padding); ctx.lineTo(pX, height - padding); ctx.stroke();
+
                 
+
                 ctx.strokeStyle = "#555555";
+
                 ctx.beginPath(); ctx.moveTo(pX, originY - 4); ctx.lineTo(pX, originY + 4); ctx.stroke();
+
                 ctx.fillStyle = "#000000";
-                ctx.fillText(Number(x.toFixed(2)), pX - 4, (originY + 18 > height - 15) ? height - 15 : (originY + 18 < 20) ? 20 : originY + 18);
+
+                ctx.fillText(x, pX - 4, originY + 18);
+
             }
+
         }
 
-        for (let y = Math.floor(minY); y <= Math.ceil(maxY); y += gridStepY) {
+
+
+        // Y Grid
+
+        for (let y = Math.ceil(minY); y <= Math.floor(maxY); y++) {
+
             let pY = toPixelY(y);
+
             if (pY >= padding && pY <= height - padding) {
+
                 ctx.strokeStyle = "#e6e6e6";
+
                 ctx.beginPath(); ctx.moveTo(padding, pY); ctx.lineTo(width - padding, pY); ctx.stroke();
+
                 
+
                 ctx.strokeStyle = "#555555";
+
                 ctx.beginPath(); ctx.moveTo(originX - 4, pY); ctx.lineTo(originX + 4, pY); ctx.stroke();
+
                 if (y !== 0) {
+
                     ctx.fillStyle = "#000000";
-                    ctx.fillText(Number(y.toFixed(2)), (originX - 25 < 10) ?
+
+                    ctx.fillText(y, originX - 22, pY + 4);
+
+                }
+
+            }
+
+        }
+
+
+
+        // 2. Main Axis Lines
+
+        ctx.strokeStyle = "#000000";
+
+        ctx.lineWidth = 2;
+
+        ctx.beginPath(); ctx.moveTo(padding, originY); ctx.lineTo(width - padding, originY); ctx.stroke();
+
+        ctx.beginPath(); ctx.moveTo(originX, padding); ctx.lineTo(originX, height - padding); ctx.stroke();
+
+        ctx.fillText("X", width - padding + 10, originY + 5);
+
+        ctx.fillText("Y", originX - 4, padding - 10);
+
+
+
+        // 3. Draw Riemann Shapes
+
+        const dx = (b - a) / n;
+
+        ctx.lineWidth = 1.5;
+
+
+
+        for (let i = 0; i < n; i++) {
+
+            let leftX = a + i * dx;
+
+            let rightX = leftX + dx;
+
+            let targetX = leftX;
+
+
+
+            if (method === 2) targetX = rightX;
+
+            else if (method === 3) targetX = leftX + dx / 2.0;
+
+
+
+            let yVal = targetX * targetX;
+
+            let pLeftX = toPixelX(leftX);
+
+            let pRightX = toPixelX(rightX);
+
+            let pWidth = pRightX - pLeftX;
+
+
+
+            ctx.fillStyle = "rgba(135, 206, 250, 0.4)";
+
+            ctx.strokeStyle = "blue";
+
+
+
+            if (method === 4) {
+
+                let yLeft = leftX * leftX;
+
+                let yRight = rightX * rightX;
+
+                
+
+                ctx.beginPath();
+
+                ctx.moveTo(pLeftX, toPixelY(0));
+
+                ctx.lineTo(pRightX, toPixelY(0));
+
+                ctx.lineTo(pRightX, toPixelY(yRight));
+
+                ctx.lineTo(pLeftX, toPixelY(yLeft));
+
+                ctx.closePath();
+
+                ctx.fill();
+
+                ctx.stroke();
+
+            } else {
+
+                let pTopY = toPixelY(yVal);
+
+                let pBaseY = toPixelY(0);
+
+                let pHeight = pBaseY - pTopY;
+
+
+
+                ctx.fillRect(pLeftX, pTopY, pWidth, pHeight);
+
+                ctx.strokeRect(pLeftX, pTopY, pWidth, pHeight);
+
+            }
+
+        }
+
+
+
+        // 4. Draw Curve y = x²
+
+        ctx.strokeStyle = "red";
+
+        ctx.lineWidth = 2.5;
+
+        ctx.beginPath();
+
+        let first = true;
+
+
+
+        for (let pixelX = padding; pixelX < width - padding; pixelX++) {
+
+            let mathX = toMathX(pixelX);
+
+            let mathY = mathX * mathX;
+
+            let pixelY = toPixelY(mathY);
+
+
+
+            if (pixelY >= padding && pixelY <= height - padding) {
+
+                if (first) {
+
+                    ctx.moveTo(pixelX, pixelY);
+
+                    first = false;
+
+                } else {
+
+                    ctx.lineTo(pixelX, pixelY);
+
+                }
+
+            }
+
+        }
+
+        ctx.stroke();
+
+
+
+        // 5. Print Text Metrics
+
+        ctx.fillStyle = "black";
+
+        ctx.font = "bold 13px sans-serif";
+
+        ctx.fillText("Function: y = x²", padding, padding - 35);
+
+        ctx.fillText(`Interval: [${a}, ${b}] (n = ${n})`, padding, padding - 15);
+
+        
+
+        let textX = width - 240;
+
+        ctx.fillText(`Approximated Area: ${approxArea.toFixed(5)}`, textX, padding - 45);
+
+        ctx.fillText(`Exact Integral Area: ${exactArea.toFixed(5)}`, textX, padding - 25);
+
+        ctx.fillStyle = "rgb(150, 0, 0)";
+
+        ctx.fillText(`Absolute Error:         ${absoluteError.toFixed(5)}`, textX, padding - 5);
+
+    }
+
+
+
+    // Initial draw on page load
+
+    window.onload = updateGraph;
+
+</script>
+
+
+
+</body>
+
+</html> 
+
