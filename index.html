@@ -97,12 +97,12 @@
 <body>
 
 <div class="container">
-    <h1 id="main-title">Riemann Sum Calculator & Integrator</h1>
+    <h1 id="main-title">Riemann Sum Visualization</h1>
     
     <div class="controls">
         <div class="control-group full-width">
             <label for="functionInput">Function f(x)</label>
-            <input type="text" id="functionInput" value="x^2 - 2*x + 1" placeholder="e.g., sin(x), x^3 - 4*x, exp(-x^2)">
+            <input type="text" id="functionInput" value="sin(x)" placeholder="e.g., sin(x), log(x), x^2">
         </div>
         <div class="control-group">
             <label for="method">Method</label>
@@ -119,14 +119,14 @@
         </div>
         <div class="control-group">
             <label for="boundB">Upper Bound (b)</label>
-            <input type="number" id="boundB" value="3" step="any">
+            <input type="number" id="boundB" value="6.28" step="any">
         </div>
         <div class="control-group">
             <label for="intervals">Subintervals (n)</label>
-            <input type="number" id="intervals" value="6" min="1">
+            <input type="number" id="intervals" value="12" min="1">
         </div>
         <div id="error-msg"></div>
-        <button onclick="updateGraph()">Calculate & Visualize</button>
+        <button id="calcBtn" onclick="updateGraph()">Calculate & Visualize</button>
     </div>
 
     <canvas id="graphCanvas" width="850" height="600"></canvas>
@@ -135,12 +135,10 @@
 <script>
     let compiledExpression = null;
 
-    // Evaluates the user's custom function safely using math.js
     function evaluateFunction(x) {
         if (!compiledExpression) return 0;
         try {
             let value = compiledExpression.evaluate({ x: x });
-            // Handle cases where result is a complex number or not real
             if (typeof value === 'number' && isFinite(value)) {
                 return value;
             }
@@ -150,9 +148,8 @@
         }
     }
 
-    // Uses numeric integration (Simpson's Rule) to calculate a highly precise accurate integral for any function
     function calculateExactIntegral(a, b) {
-        const simpsonN = 2000; // Large even number of subdivisions for near-perfect precision
+        const simpsonN = 2000; 
         const h = (b - a) / simpsonN;
         let sum = evaluateFunction(a) + evaluateFunction(b);
 
@@ -186,51 +183,44 @@
 
     function updateGraph() {
         const canvas = document.getElementById('graphCanvas');
+        if (!canvas) return;
         const ctx = canvas.getContext('2d');
         const errorDiv = document.getElementById('error-msg');
         const functionString = document.getElementById('functionInput').value;
         
-        errorDiv.innerText = ''; // Reset error string
+        errorDiv.innerText = ''; 
 
-        // Try to compile user math string
         try {
             compiledExpression = math.compile(functionString);
-            // Quick test calculation to make sure expression is completely valid
             compiledExpression.evaluate({ x: 1 }); 
         } catch (err) {
             errorDiv.innerText = "Syntax Error in Function: " + err.message;
             return;
         }
 
-        // Inputs
         const method = parseInt(document.getElementById('method').value);
         const a = parseFloat(document.getElementById('boundA').value);
         const b = parseFloat(document.getElementById('boundB').value);
         const n = parseInt(document.getElementById('intervals').value);
 
         if (isNaN(a) || isNaN(b) || isNaN(n) || n <= 0) {
-            errorDiv.innerText = "Please enter valid numeric values for bounds and intervals.";
+            errorDiv.innerText = "Please enter valid numeric values.";
             return;
         }
 
-        // Dynamically update the header title 
         document.getElementById('main-title').innerText = `Riemann Sum Visualization: f(x) = ${functionString}`;
 
-        // Math Calculations
         const approxArea = calculateRiemannSum(method, a, b, n);
         const exactArea = calculateExactIntegral(a, b);
         const absoluteError = Math.abs(exactArea - approxArea);
 
-        // Layout variables
         const padding = 60;
         const width = canvas.width;
         const height = canvas.height;
 
-        // Auto-scale window viewport bounding boxes based on the function geometry inside [a, b]
         let minX = Math.min(0, a) - 1;
         let maxX = Math.max(0, b) + 1;
         
-        // Scan the range to find the appropriate local min/max Y boundaries dynamically
         let sampleMinY = 0;
         let sampleMaxY = 1;
         let step = (maxX - minX) / 100;
@@ -245,7 +235,6 @@
         let minY = sampleMinY - Math.abs(sampleMinY * 0.2) - 1;
         let maxY = sampleMaxY + Math.abs(sampleMaxY * 0.2) + 1;
 
-        // Coordinate conversion helper functions
         function toPixelX(mathX) {
             return padding + ((mathX - minX) / (maxX - minX)) * (width - 2 * padding);
         }
@@ -256,24 +245,20 @@
             return minX + ((pixelX - padding) / (width - 2 * padding)) * (maxX - minX);
         }
 
-        // Clear canvas
         ctx.clearRect(0, 0, width, height);
 
         const originY = toPixelY(0);
         const originX = toPixelX(0);
 
-        // 1. Draw Background Grid Lines & Ticks
         ctx.lineWidth = 1;
         ctx.font = "12px sans-serif";
         
-        // Dynamic Grid Step calculation so layout grid isn't overcrowded
         let xRange = maxX - minX;
         let gridStepX = xRange > 20 ? Math.ceil(xRange / 15) : 1;
         
         let yRange = maxY - minY;
         let gridStepY = yRange > 20 ? Math.ceil(yRange / 15) : 1;
 
-        // X Grid
         for (let x = Math.floor(minX); x <= Math.ceil(maxX); x += gridStepX) {
             let pX = toPixelX(x);
             if (pX >= padding && pX <= width - padding) {
@@ -283,12 +268,10 @@
                 ctx.strokeStyle = "#555555";
                 ctx.beginPath(); ctx.moveTo(pX, originY - 4); ctx.lineTo(pX, originY + 4); ctx.stroke();
                 ctx.fillStyle = "#000000";
-                // Clip text precision decimal floating points
                 ctx.fillText(Number(x.toFixed(2)), pX - 4, (originY + 18 > height - 15) ? height - 15 : (originY + 18 < 20) ? 20 : originY + 18);
             }
         }
 
-        // Y Grid
         for (let y = Math.floor(minY); y <= Math.ceil(maxY); y += gridStepY) {
             let pY = toPixelY(y);
             if (pY >= padding && pY <= height - padding) {
@@ -299,27 +282,4 @@
                 ctx.beginPath(); ctx.moveTo(originX - 4, pY); ctx.lineTo(originX + 4, pY); ctx.stroke();
                 if (y !== 0) {
                     ctx.fillStyle = "#000000";
-                    ctx.fillText(Number(y.toFixed(2)), (originX - 25 < 10) ? 10 : originX - 25, pY + 4);
-                }
-            }
-        }
-
-        // 2. Main Axis Lines
-        ctx.strokeStyle = "#000000";
-        ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(padding, originY); ctx.lineTo(width - padding, originY); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(originX, padding); ctx.lineTo(originX, height - padding); ctx.stroke();
-        ctx.fillText("X", width - padding + 10, (originY + 5 > height - 10) ? height - 10 : originY + 5);
-        ctx.fillText("Y", (originX - 4 < 10) ? 10 : originX - 4, padding - 10);
-
-        // 3. Draw Riemann Shapes
-        const dx = (b - a) / n;
-        ctx.lineWidth = 1.5;
-
-        for (let i = 0; i < n; i++) {
-            let leftX = a + i * dx;
-            let rightX = leftX + dx;
-            let targetX = leftX;
-
-            if (method === 2) targetX = rightX;
-            else if (method ===
+                    ctx.fillText(Number(y.toFixed(2)), (originX - 25 < 10) ?
